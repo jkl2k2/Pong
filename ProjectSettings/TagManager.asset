@@ -10,6 +10,9 @@ TagManager:
   - PlayerBottom
   - ResetLeft
   - ResetRight
+  - PowerUpBigBall
+  - PowerUpBigPaddle
+  - PowerUpCrazyBall
   layers:
   - Default
   - TransparentFX

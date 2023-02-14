@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -12,6 +13,11 @@ public class Ball : MonoBehaviour
     private int rightScore;
     
     public Rigidbody rb;
+    public Transform leftPaddleTrans;
+    public Transform rightPaddleTrans;
+    public AudioClip powerUpAudio;
+    public TextMeshProUGUI p1Score;
+    public TextMeshProUGUI p2Score;
 
     private void Start()
     {
@@ -53,10 +59,21 @@ public class Ball : MonoBehaviour
         LaunchBall(direction);
     }
     
+    private IEnumerator DelayedBallScaleReset(float wait)
+    {
+        yield return new WaitForSeconds(wait);
+        transform.localScale = new Vector3(1f, 1f, 1f);
+    }
+    
+    private IEnumerator DelayedPaddleScaleReset(float wait)
+    {
+        yield return new WaitForSeconds(wait);
+        leftPaddleTrans.localScale = new Vector3(1f, 1f, 1f);
+        rightPaddleTrans.localScale = new Vector3(1f, 1f, 1f);
+    }
+    
     private void LaunchBall(int direction)
     {
-        // Debug.Log("LaunchBall() Called");
-        
         GetComponent<TrailRenderer>().emitting = true;
 
         if (direction == -1)
@@ -81,10 +98,12 @@ public class Ball : MonoBehaviour
         {
             Debug.Log("Player 2 scored!!!");
             rightScore++;
+            p2Score.SetText(rightScore.ToString());
         } else if (direction == 1)
         {
             Debug.Log("Player 1 scored!!!");
             leftScore++;
+            p1Score.SetText(leftScore.ToString());
         }
         else
         {
@@ -96,6 +115,8 @@ public class Ball : MonoBehaviour
     {
         leftScore = 0;
         rightScore = 0;
+        p2Score.SetText(rightScore.ToString());
+        p1Score.SetText(leftScore.ToString());
     }
     
     private void ResetBall(int direction)
@@ -131,6 +152,8 @@ public class Ball : MonoBehaviour
     private void OnCollisionEnter(Collision collision)
     {
         AudioSource[] audioSources = GetComponents<AudioSource>();
+
+        audioSources[0].pitch = Math.Abs(rb.velocity.x) * 0.125f - 0.875f;
         
         audioSources[0].Play();
         
@@ -159,8 +182,6 @@ public class Ball : MonoBehaviour
                 renderer.material.SetColor("_Color", Color.magenta);
                 break;
         }
-        
-        GetComponent<AudioSource>().Play();
         
         if (collision.gameObject.tag.Equals("PlayerMiddle"))
         {
@@ -218,5 +239,36 @@ public class Ball : MonoBehaviour
         {
             ResetBall(1);
         }
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.tag.Equals("PowerUpBigBall"))
+        {
+            transform.localScale = new Vector3(2f, 2f, 2f);
+
+            coroutine = DelayedBallScaleReset(5);
+            StartCoroutine(coroutine);
+        } else if (other.gameObject.tag.Equals("PowerUpBigPaddle"))
+        {
+            leftPaddleTrans.localScale = new Vector3(1f, 1.5f, 1f);
+            rightPaddleTrans.localScale = new Vector3(1f, 1.5f, 1f);
+            
+            coroutine = DelayedPaddleScaleReset(5);
+            StartCoroutine(coroutine);
+        } else if (other.gameObject.tag.Equals("PowerUpCrazyBall"))
+        {
+            if (rb.velocity.x < 0)
+            {
+                rb.velocity = new Vector3(rb.velocity.x - 8, rb.velocity.y);
+            }
+            else
+            {
+                rb.velocity = new Vector3(rb.velocity.x + 8, rb.velocity.y);
+            }
+        }
+        
+        GetComponents<AudioSource>()[1].PlayOneShot(powerUpAudio);
+        other.gameObject.SetActive(false);
     }
 }
